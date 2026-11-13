@@ -1,0 +1,66 @@
+function robotStart(){
+ if(robotTimer!==null || !robot || layer>=MAX)return;
+
+ function tick(){
+  robotTimer=null;
+  if(!robot || layer>=MAX)return;
+
+  if(!busy && tool>=layer){
+   // Lv.500なら残りの盤面を一瞬で採掘
+   if(robot>=ROBOTMAX){
+    let totalGain=0;
+
+    for(let y=0;y<H;y++){
+     for(let x=0;x<W;x++){
+      const c=cell(x,y);
+      if(!c || c.dug)continue;
+
+      c.dug=true;
+      totalGain+=blockValue(layer);
+
+      if(c.gem!==null){
+       totalGain+=Math.floor(
+        gemValues[c.gem]*(1+layer*.002)*priceBonus()
+       );
+      }
+
+      rx=x;
+      ry=y;
+     }
+    }
+
+    money+=totalGain;
+    autoUpgradeAll();
+    log('🤖 Lv.500！盤面を一瞬で全採掘！ +'+fmt(totalGain));
+
+    if(cleared())nextLayer();
+    render();
+   }else{
+    // Lv.499以下は必ず1ブロックだけ
+    let found=null;
+    for(let y=0;y<H&&!found;y++){
+     for(let x=0;x<W;x++){
+      if(!cell(x,y).dug){
+       found=[x,y];
+       break;
+      }
+     }
+    }
+
+    if(found){
+     rx=found[0];
+     ry=found[1];
+     mine(rx,ry,true);
+     if(cleared())nextLayer();
+     render();
+    }
+   }
+  }
+
+  if(robot && layer<MAX){
+   robotTimer=setTimeout(tick,robot>=ROBOTMAX?100:robotDelay());
+  }
+ }
+
+ robotTimer=setTimeout(tick,robotDelay());
+}
